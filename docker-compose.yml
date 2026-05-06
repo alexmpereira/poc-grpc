@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  grpc-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: poc-grpc-server
+    ports:
+      - "50051:50051"
+    volumes:
+      - ./proto:/usr/src/app/proto
+      - ./server:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - PORT=50051
+
+  grpc-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    container_name: poc-grpc-client
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./proto:/usr/src/app/proto
+      - ./client:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - PORT=3000
+      - GRPC_SERVER_HOST=grpc-server:50051
+    depends_on:
+      - grpc-server
