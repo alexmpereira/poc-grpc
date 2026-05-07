@@ -30,6 +30,24 @@ O gRPC brilha em cenários onde performance, eficiência de rede e contratos rí
 *   **Não "Human-Readable":** Mensagens em binário (Protobuf) dificultam a depuração nativa (você não pode simplesmente usar a aba de Network do browser de forma legível sem ferramentas específicas).
 *   **Suporte em Browser:** Requer proxies (`grpc-web` ou Envoy) para chamadas diretas do front-end/browser, o que o torna menos atrativo como API Edge para clientes web.
 
+## Muito Além do Hello World: Casos de Uso Reais
+
+Enquanto nossa POC utiliza um exemplo simples do tipo Unário (uma requisição = uma resposta), o verdadeiro poder do gRPC aparece em cenários de arquiteturas distribuídas, alta volumetria e que demandam streaming. Aqui estão exemplos arquiteturais reais de como o gRPC é utilizado nas grandes empresas:
+
+### 1. API Gateway para Microsserviços (BFF - Backend For Frontend)
+O caso de uso mais popular é ter uma API Edge "pública" (em Node.js, GraphQL, etc) recebendo requisições HTTP REST padrão de navegadores ou aplicativos mobile. Esse Gateway converte a requisição em chamadas binárias (Protobuf) e aciona diversos microsserviços internos via gRPC, que são "invisíveis" para a internet. 
+* **Exemplo Real:** O usuário acessa a tela do Netflix. O Gateway principal recebe o request HTTP REST, e então dispara internamente dezenas de chamadas gRPC concorrentes: uma para o "Serviço de Histórico", outra pro "Serviço de Recomendações" (em Go) e outra pro "Serviço de Perfis" (em Java). Em milissegundos o Gateway recebe tudo, consolida num JSON e devolve pra tela. A redução de latência (tempo de resposta) e o não-uso do "peso" do JSON na rede interna da empresa salvam milhões de dólares em processamento.
+
+### 2. Streaming de Dados (Tempo Real)
+O gRPC roda nativamente em cima do HTTP/2, que permite que as conexões fiquem abertas recebendo ou enviando um fluxo ininterrupto de dados.
+* **Server Streaming:** O cliente manda uma única requisição ("Extrair base de dados em CSV") e o servidor começa a enviar as milhares de linhas de volta "pedaço por pedaço" via stream, sem sobrecarregar a memória do servidor com o arquivo inteiro de uma vez só.
+* **Client Streaming:** Um dispositivo de IoT, ou o app do motorista em um app de mobilidade, enviando pacotes minúsculos com suas coordenadas GPS a cada meio segundo para o servidor, enquanto a conexão permanece a mesma e sem gerar o peso extra dos cabeçalhos HTTP convencionais a cada envio.
+* **Bidirectional Streaming (Chat/Jogos):** Tanto o cliente quanto o servidor enviam e recebem dados mutuamente por uma única conexão TCP contínua e sempre aberta. Ideal para processamentos colaborativos em tempo real, chats interativos ou streaming de áudio/vídeo corporativo.
+
+### 3. Padronização Estrita entre Times (Schema-Driven)
+Em empresas de médio e grande porte, com dezenas de Squads, depender de JSON/REST frequentemente causa problemas: se o "Time A" mudar o nome do campo de um JSON (ex: de `clientId` para `client_id`), a aplicação do "Time B" repentinamente quebra. 
+No gRPC, a empresa inteira compartilha um repositório centralizado com os arquivos `.proto`. Quando há uma mudança nesses arquivos, todas as linguagens (Node, Go, C#) regeram suas interfaces tipadas. Dessa forma, é impossível escrever uma linha de código mandando parâmetros errados, pois seu projeto nem chegará a compilar. É o que chamamos de *type-safety* ou "Segurança de Tipo" cross-plataforma.
+
 ---
 
 ## Estrutura da POC
