@@ -15,6 +15,16 @@ services:
     environment:
       - PORT=50051
 
+  grpc-go-server:
+    build:
+      context: .
+      dockerfile: go-server/Dockerfile
+    container_name: poc-grpc-go-server
+    ports:
+      - "50052:50052"
+    environment:
+      - PORT=50052
+
   grpc-client:
     build:
       context: ./client
@@ -29,5 +39,7 @@ services:
     environment:
       - PORT=3000
       - GRPC_SERVER_HOST=grpc-server:50051
+      - GRPC_GO_SERVER_HOST=grpc-go-server:50052
     depends_on:
       - grpc-server
+      - grpc-go-server

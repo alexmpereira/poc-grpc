@@ -1,4 +1,4 @@
-# POC gRPC com Node.js e Docker
+# POC gRPC com Node.js, Go e Docker
 
 Este repositório contém uma Prova de Conceito (POC) para demonstrar o uso prático e a arquitetura do **gRPC**. Ele foi construído pensando em um cenário onde um Tech Lead precisa avaliar a adoção e o funcionamento dessa tecnologia.
 
@@ -34,11 +34,12 @@ O gRPC brilha em cenários onde performance, eficiência de rede e contratos rí
 
 ## Estrutura da POC
 
-Esta POC é composta por três partes principais:
+Esta POC é composta por quatro partes principais:
 
 1.  **`proto/`:** Contém o arquivo `greeter.proto`, que define o contrato do serviço `SayHello`.
-2.  **`server/`:** Uma aplicação Node.js que implementa o servidor gRPC e responde na porta `50051`.
-3.  **`client/`:** Uma aplicação Node.js (com Express) que age como o cliente gRPC. Ela expõe uma API REST na porta `3000` para facilitar os nossos testes via browser/curl, convertendo a chamada REST para o servidor gRPC em backend.
+2.  **`server/`:** Uma aplicação Node.js que implementa o servidor gRPC principal, rodando na porta `50051`.
+3.  **`go-server/`:** Um microsserviço em Go que implementa o mesmo serviço gRPC para demonstrar um ambiente poliglota realista, rodando na porta `50052`.
+4.  **`client/`:** Uma aplicação Node.js (com Express) que age como cliente gRPC para ambos os servidores. Ela expõe uma API REST na porta `3000` para facilitar os nossos testes, direcionando requisições para o Node ou para o Go em backend.
 
 ## Como Executar a POC
 
@@ -46,28 +47,38 @@ Certifique-se de ter o **Docker** e o **Docker Compose** instalados na sua máqu
 
 1.  No diretório raiz da POC, suba os contêineres:
     ```bash
-    docker-compose up --build
+    docker compose up --build
     ```
     *Dica: adicione `-d` no final se quiser rodar em background.*
 
-2.  Você verá nos logs (caso não use `-d`) que ambos o `grpc-server` e o `grpc-client` estarão rodando. O servidor subirá na porta 50051 e a API REST do cliente na porta 3000.
+2.  Você verá nos logs (caso não use `-d`) que os serviços `grpc-server` (Node), `grpc-go-server` (Go) e `grpc-client` estarão rodando simultaneamente. O Node escuta na porta 50051, o Go na 50052, e a API REST do cliente na porta 3000.
 
 ## Como Testar
 
-Para testar a comunicação gRPC de forma simplificada, faremos uma requisição HTTP para o serviço `client` (porta 3000). O serviço `client`, por sua vez, vai acionar o serviço `server` via gRPC.
+Para testar a comunicação gRPC de forma simplificada, faremos requisições HTTP para o serviço `client` (porta 3000). O cliente acionará o servidor Node ou o servidor Go via gRPC, dependendo da rota acessada.
 
-Abra o seu navegador ou terminal e acesse a seguinte URL, trocando `SeuNome` pelo que desejar:
+Abra o seu navegador ou terminal e acesse as seguintes URLs, trocando `Alex` pelo nome que desejar:
 
+**Testando o Servidor Node.js:**
 ```bash
 # Usando cURL no terminal
 curl http://localhost:3000/api/greet/Alex
 
-# Ou simplesmente abra no seu navegador
+# Ou no navegador
 http://localhost:3000/api/greet/Alex
 ```
 
-**Resultado Esperado:**
-Você receberá um JSON de resposta da API do cliente, originado a partir do processamento do servidor gRPC:
+**Testando o Servidor Go:**
+```bash
+# Usando cURL no terminal
+curl http://localhost:3000/api/greet-go/Alex
+
+# Ou no navegador
+http://localhost:3000/api/greet-go/Alex
+```
+
+**Resultados Esperados:**
+Você receberá um JSON de resposta da API do cliente. Repare como as mensagens variam levemente para evidenciar qual servidor respondeu:
 ```json
 {
   "success": true,
@@ -75,9 +86,16 @@ Você receberá um JSON de resposta da API do cliente, originado a partir do pro
 }
 ```
 
-Nos logs do Docker, você também verá algo como:
+```json
+{
+  "success": true,
+  "data": "Olá, Alex! Bem-vindo ao mundo gRPC com Go."
+}
 ```
-poc-grpc-client  | [Client] Calling gRPC Server for name: Alex
-poc-grpc-server  | [Server] Received request for name: Alex
-poc-grpc-client  | [Client] Received response: Olá, Alex! Bem-vindo ao mundo gRPC.
+
+Nos logs do Docker, você também verá o rastreamento das chamadas passando pelos diferentes serviços:
+```
+poc-grpc-client     | [Client] Calling Go gRPC Server for name: Alex
+poc-grpc-go-server  | 2026/05/07 15:00:00 [Go Server] Received request for name: Alex
+poc-grpc-client     | [Client Go] Received response: Olá, Alex! Bem-vindo ao mundo gRPC com Go.
 ```
