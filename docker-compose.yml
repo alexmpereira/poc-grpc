@@ -9,7 +9,7 @@ services:
     ports:
       - "50051:50051"
     volumes:
-      - ./proto:/usr/src/app/proto
+      - ./proto:/usr/src/proto
       - ./server:/usr/src/app
       - /usr/src/app/node_modules
     environment:
@@ -33,7 +33,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./proto:/usr/src/app/proto
+      - ./proto:/usr/src/proto
       - ./client:/usr/src/app
       - /usr/src/app/node_modules
     environment:

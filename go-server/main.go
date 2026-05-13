@@ -13,12 +13,20 @@ import (
 )
 
 type server struct {
-	pb.UnimplementedGreeterServer
+	pb.UnimplementedWatchServiceServer
 }
 
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("[Go Server] Received request for name: %v", in.GetName())
-	return &pb.HelloReply{Message: "Olá, " + in.GetName() + "! Bem-vindo ao mundo gRPC com Go."}, nil
+func (s *server) GetWatchedMovies(ctx context.Context, in *pb.UserRequest) (*pb.WatchedMoviesResponse, error) {
+	log.Printf("[Go Server] Buscando filmes assistidos para o usuário: %v", in.GetUserId())
+	
+	// Simulando dados vindos de um banco de dados
+	movies := []*pb.Movie{
+		{Title: "Matrix", ProgressPercent: 100},
+		{Title: "Inception", ProgressPercent: 45},
+		{Title: "Interstellar", ProgressPercent: 10},
+	}
+	
+	return &pb.WatchedMoviesResponse{Movies: movies}, nil
 }
 
 func main() {
@@ -31,9 +39,9 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{})
+	pb.RegisterWatchServiceServer(s, &server{})
 	reflection.Register(s)
-	log.Printf("[Go Server] gRPC Server running on port %v", port)
+	log.Printf("[Go Server] gRPC WatchService rodando na porta %v", port)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

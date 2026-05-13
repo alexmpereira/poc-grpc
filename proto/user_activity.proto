@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package useractivity;
+
+option go_package = "./pb";
+
+message UserRequest {
+  string user_id = 1;
+}
+
+// Serviço implementado no Node.js (Histórico de conta/pagamentos)
+service HistoryService {
+  rpc GetAccountHistory (UserRequest) returns (HistoryResponse) {}
+}
+
+message HistoryItem {
+  string action = 1;
+  string date = 2;
+}
+
+message HistoryResponse {
+  repeated HistoryItem history = 1;
+}
+
+// Serviço implementado no Go (Filmes assistidos)
+service WatchService {
+  rpc GetWatchedMovies (UserRequest) returns (WatchedMoviesResponse) {}
+}
+
+message Movie {
+  string title = 1;
+  int32 progress_percent = 2;
+}
+
+message WatchedMoviesResponse {
+  repeated Movie movies = 1;
+}

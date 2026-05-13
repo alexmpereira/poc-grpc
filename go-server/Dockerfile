@@ -1,9 +1,9 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.23-alpine AS builder
 
 # Install protoc and plugins
 RUN apk add --no-cache protobuf-dev protoc
-RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+RUN go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 
 WORKDIR /usr/src/app
 
@@ -17,15 +17,15 @@ WORKDIR /usr/src/app/go-server
 
 # Initialize go mod and download dependencies
 RUN go mod init go-server
-RUN go get google.golang.org/grpc
-RUN go get google.golang.org/protobuf
+RUN go get google.golang.org/grpc@v1.64.0
+RUN go get google.golang.org/protobuf@v1.36.11
 RUN go mod tidy
 
 # Generate proto
 RUN mkdir -p pb
 RUN protoc --go_out=pb --go_opt=paths=source_relative \
     --go-grpc_out=pb --go-grpc_opt=paths=source_relative \
-    -I ../proto ../proto/greeter.proto
+    -I ../proto ../proto/user_activity.proto
 
 # Build the application
 RUN go build -o main .

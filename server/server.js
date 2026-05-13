@@ -2,7 +2,7 @@ const grpc = require('@grpc/grpc-js');
 const protoLoader = require('@grpc/proto-loader');
 const path = require('path');
 
-const PROTO_PATH = path.join(__dirname, '../proto/greeter.proto');
+const PROTO_PATH = path.join(__dirname, '../proto/user_activity.proto');
 
 // Load the protobuf
 const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
@@ -13,18 +13,27 @@ const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
   oneofs: true,
 });
 
-const greeterProto = grpc.loadPackageDefinition(packageDefinition).greeter;
+const userActivityProto = grpc.loadPackageDefinition(packageDefinition).useractivity;
 
-// Implement the SayHello RPC method
-function sayHello(call, callback) {
-  console.log(`[Server] Received request for name: ${call.request.name}`);
-  callback(null, { message: `Olá, ${call.request.name}! Bem-vindo ao mundo gRPC.` });
+// Implement the GetAccountHistory RPC method
+function getAccountHistory(call, callback) {
+  const userId = call.request.user_id;
+  console.log(`[Node Server] Buscando histórico para o usuário: ${userId}`);
+  
+  // Simulando dados de banco de dados
+  const historyData = [
+    { action: "Login efetuado (Web)", date: "2026-05-07T10:00:00Z" },
+    { action: "Plano atualizado para Premium", date: "2026-05-06T15:30:00Z" },
+    { action: "Cartão de crédito adicionado", date: "2026-05-01T09:12:00Z" }
+  ];
+  
+  callback(null, { history: historyData });
 }
 
 // Start the gRPC server
 function main() {
   const server = new grpc.Server();
-  server.addService(greeterProto.Greeter.service, { sayHello: sayHello });
+  server.addService(userActivityProto.HistoryService.service, { getAccountHistory: getAccountHistory });
   
   const port = process.env.PORT || 50051;
   server.bindAsync(`0.0.0.0:${port}`, grpc.ServerCredentials.createInsecure(), (err, boundPort) => {
@@ -32,7 +41,7 @@ function main() {
       console.error(err);
       return;
     }
-    console.log(`[Server] gRPC Server running on port ${boundPort}`);
+    console.log(`[Node Server] gRPC HistoryService rodando na porta ${boundPort}`);
   });
 }
 

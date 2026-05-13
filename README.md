@@ -54,10 +54,10 @@ No gRPC, a empresa inteira compartilha um repositório centralizado com os arqui
 
 Esta POC é composta por quatro partes principais:
 
-1.  **`proto/`:** Contém o arquivo `greeter.proto`, que define o contrato do serviço `SayHello`.
-2.  **`server/`:** Uma aplicação Node.js que implementa o servidor gRPC principal, rodando na porta `50051`.
-3.  **`go-server/`:** Um microsserviço em Go que implementa o mesmo serviço gRPC para demonstrar um ambiente poliglota realista, rodando na porta `50052`.
-4.  **`client/`:** Uma aplicação Node.js (com Express) que age como cliente gRPC para ambos os servidores. Ela expõe uma API REST na porta `3000` para facilitar os nossos testes, direcionando requisições para o Node ou para o Go em backend.
+1.  **`proto/`:** Contém o arquivo `user_activity.proto`, que define os contratos para buscar "Histórico de Conta" e "Filmes Assistidos".
+2.  **`server/`:** Uma aplicação Node.js que implementa o servidor gRPC principal (`HistoryService`), simulando o retorno de dados de conta e pagamentos. Roda na porta `50051`.
+3.  **`go-server/`:** Um microsserviço em Go que implementa o serviço gRPC secundário (`WatchService`), simulando a busca do progresso de filmes de um usuário na Netflix. Roda na porta `50052`.
+4.  **`client/`:** Uma aplicação Node.js (com Express) que age como API Gateway/BFF. Ela expõe uma API REST na porta `3000` para facilitar nossos testes. Ela direciona requisições de histórico para o Node e de filmes para o Go em backend.
 
 ## Como Executar a POC
 
@@ -73,47 +73,59 @@ Certifique-se de ter o **Docker** e o **Docker Compose** instalados na sua máqu
 
 ## Como Testar
 
-Para testar a comunicação gRPC de forma simplificada, faremos requisições HTTP para o serviço `client` (porta 3000). O cliente acionará o servidor Node ou o servidor Go via gRPC, dependendo da rota acessada.
+Para testar a comunicação gRPC de forma simplificada, faremos requisições HTTP para a nossa API Gateway `client` (porta 3000). Dependendo da rota acessada, ela fará uma chamada binária gRPC rápida para o servidor Node ou Go responsável pela funcionalidade.
 
-Abra o seu navegador ou terminal e acesse as seguintes URLs, trocando `Alex` pelo nome que desejar:
+Abra o seu navegador ou terminal e acesse as seguintes URLs, trocando `123` pelo ID de usuário que desejar:
 
-**Testando o Servidor Node.js:**
+**Testando o Servidor Node.js (Consulta de Histórico):**
 ```bash
 # Usando cURL no terminal
-curl http://localhost:3000/api/greet/Alex
+curl http://localhost:3000/api/history/123
 
 # Ou no navegador
-http://localhost:3000/api/greet/Alex
+http://localhost:3000/api/history/123
 ```
 
-**Testando o Servidor Go:**
+**Testando o Servidor Go (Filmes Assistidos):**
 ```bash
 # Usando cURL no terminal
-curl http://localhost:3000/api/greet-go/Alex
+curl http://localhost:3000/api/watched/123
 
 # Ou no navegador
-http://localhost:3000/api/greet-go/Alex
+http://localhost:3000/api/watched/123
 ```
 
 **Resultados Esperados:**
-Você receberá um JSON de resposta da API do cliente. Repare como as mensagens variam levemente para evidenciar qual servidor respondeu:
+
+No **Histórico da Conta** (Servidor Node.js), você receberá:
 ```json
 {
   "success": true,
-  "data": "Olá, Alex! Bem-vindo ao mundo gRPC."
+  "source": "Node.js",
+  "data": [
+    { "action": "Login efetuado (Web)", "date": "2026-05-07T10:00:00Z" },
+    { "action": "Plano atualizado para Premium", "date": "2026-05-06T15:30:00Z" },
+    { "action": "Cartão de crédito adicionado", "date": "2026-05-01T09:12:00Z" }
+  ]
 }
 ```
 
+Nos **Filmes Assistidos** (Servidor Go), você receberá:
 ```json
 {
   "success": true,
-  "data": "Olá, Alex! Bem-vindo ao mundo gRPC com Go."
+  "source": "Go",
+  "data": [
+    { "title": "Matrix", "progressPercent": 100 },
+    { "title": "Inception", "progressPercent": 45 },
+    { "title": "Interstellar", "progressPercent": 10 }
+  ]
 }
 ```
 
-Nos logs do Docker, você também verá o rastreamento das chamadas passando pelos diferentes serviços:
+Nos logs do Docker, você também verá o rastreamento das chamadas gRPC passando pelos diferentes contêineres:
 ```
-poc-grpc-client     | [Client] Calling Go gRPC Server for name: Alex
-poc-grpc-go-server  | 2026/05/07 15:00:00 [Go Server] Received request for name: Alex
-poc-grpc-client     | [Client Go] Received response: Olá, Alex! Bem-vindo ao mundo gRPC com Go.
+poc-grpc-client     | [Gateway] Chamando Go gRPC (WatchService) para usuário: 123
+poc-grpc-go-server  | 2026/05/07 15:00:00 [Go Server] Buscando filmes assistidos para o usuário: 123
+poc-grpc-client     | [Gateway] Resposta de filmes recebida
 ```
