@@ -52,6 +52,27 @@ No gRPC, a empresa inteira compartilha um repositório centralizado com os arqui
 
 ## Estrutura da POC
 
+```mermaid
+graph TD
+    Client([Navegador / cURL]) -->|HTTP GET REST| Gateway[API Gateway - Node.js porta 3000]
+    
+    Gateway -->|Chamada gRPC História\n user_activity.proto| NodeServer[Node.js gRPC Server - porta 50051]
+    Gateway -->|Chamada gRPC Filmes\n user_activity.proto| GoServer[Go gRPC Server - porta 50052]
+    
+    NodeServer -.->|Retorna JSON Histórico| Gateway
+    GoServer -.->|Retorna JSON Filmes| Gateway
+    
+    Gateway -.->|Consolida JSON| Client
+    
+    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef gateway fill:#bbf,stroke:#333,stroke-width:2px;
+    classDef server fill:#bfb,stroke:#333,stroke-width:2px;
+    
+    class Client client;
+    class Gateway gateway;
+    class NodeServer,GoServer server;
+```
+
 Esta POC é composta por quatro partes principais:
 
 1.  **`proto/`:** Contém o arquivo `user_activity.proto`, que define os contratos para buscar "Histórico de Conta" e "Filmes Assistidos".
